@@ -52,7 +52,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.wafastarz.eeman"
+        applicationId "id.dais.play"
         minSdkVersion flutter.minSdkVersion
         targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()

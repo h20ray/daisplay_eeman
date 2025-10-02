@@ -1,12 +1,10 @@
 // ignore_for_file: one_member_abstracts
 import 'package:geocoding/geocoding.dart';
 import 'package:quran_app/common/domain/pray.dart';
-import 'package:quran_app/modules/home/data/domain/doa_daily.dart';
 import 'package:quran_app/modules/home/domain/home_repository.dart';
 
 abstract class HomeUseCase {
   Future<List<Pray>> getTiming(DateTime date, Location location);
-  Future<List<DoaDaily>> getDoaDaily();
   Future<Location> getLocation();
   Future<String> getCity(Location location);
 }
@@ -21,7 +19,10 @@ class HomeUseCaseImpl implements HomeUseCase {
   /// ---------------------------------
   @override
   Future<List<Pray>> getTiming(DateTime date, Location location) async {
-    final timingList = await _homeRepository.getTiming(date, location); // Get timings using repository
+    final timingList = await _homeRepository.getTiming(
+      date,
+      location,
+    ); // Get timings using repository
     return timingList;
   }
 
@@ -31,14 +32,6 @@ class HomeUseCaseImpl implements HomeUseCase {
   @override
   Future<Location> getLocation() async {
     return _homeRepository.getLocation();
-  }
-
-  /// ---------------------------------
-  /// Fecth [DoaDaily] from JSON source
-  /// ---------------------------------
-  @override
-  Future<List<DoaDaily>> getDoaDaily() {
-    return _homeRepository.getDoaDaily();
   }
 
   @override

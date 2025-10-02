@@ -32,7 +32,9 @@ class HomeView extends StatelessWidget {
               actions: [
                 IconButton(
                   onPressed: () => context.read<AppThemeCubit>().toggleTheme(),
-                  icon: Icon(theme == ThemeMode.dark ? Icons.nightlight : Icons.sunny),
+                  icon: Icon(
+                    theme == ThemeMode.dark ? Icons.nightlight : Icons.sunny,
+                  ),
                 ),
                 const AppInfoAction(),
               ],
@@ -59,7 +61,8 @@ class HomeView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(left: 20, bottom: 8, right: 16),
+                    padding:
+                        const EdgeInsets.only(left: 20, bottom: 8, right: 16),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -76,7 +79,8 @@ class HomeView extends StatelessWidget {
                               Navigator.push<void>(
                                 context,
                                 MaterialPageRoute<void>(
-                                  builder: (BuildContext context) => PrayerTimePage(
+                                  builder: (BuildContext context) =>
+                                      PrayerTimePage(
                                     city: state.currentLocationInCity,
                                     location: state.currentLocation,
                                   ),
@@ -90,7 +94,8 @@ class HomeView extends StatelessWidget {
                               Text(
                                 l10n.more,
                                 style: context.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                               const Icon(
@@ -118,16 +123,22 @@ class HomeView extends StatelessWidget {
                     padding: const EdgeInsets.only(left: 20, bottom: 8),
                     child: Text(
                       l10n.explore,
-                      style: context.bodySmall
-                          ?.copyWith(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold),
+                      style: context.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   MenuList(
-                    doaDaily: state is HomeLoaded ? state.doaDaily : [],
-                    city: state is HomeLoaded ? state.currentLocationInCity : '',
+                    city:
+                        state is HomeLoaded ? state.currentLocationInCity : '',
                     location: state is HomeLoaded
                         ? state.currentLocation
-                        : Location(latitude: 0, longitude: 0, timestamp: DateTime.now()),
+                        : Location(
+                            latitude: 0,
+                            longitude: 0,
+                            timestamp: DateTime.now(),
+                          ),
                   ),
                   const SizedBox(
                     height: EemanSizes.s24,

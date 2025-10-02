@@ -3,15 +3,12 @@ import 'package:geocoding/geocoding.dart';
 import 'package:quran_app/common/domain/menu_item.dart';
 import 'package:quran_app/gen/assets.gen.dart';
 import 'package:quran_app/l10n/l10n.dart';
-import 'package:quran_app/modules/home/data/domain/doa_daily.dart';
 import 'package:quran_app/modules/home/presentation/widgets/grid_item.dart';
-import 'package:quran_app/modules/home/utils/bottomsheet.dart';
 import 'package:quran_app/modules/prayer_time/prayer_time.dart';
 import 'package:quran_app/modules/qibla/presentation/qibla_page.dart';
 
 class MenuList extends StatelessWidget {
-  const MenuList({super.key, required this.doaDaily, required this.location, required this.city});
-  final List<DoaDaily> doaDaily;
+  const MenuList({super.key, required this.location, required this.city});
   final Location location;
   final String city;
   @override
@@ -33,7 +30,10 @@ class MenuList extends StatelessWidget {
           GridItem(
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute<void>(builder: (BuildContext context) => QiblaPage(location: location)),
+              MaterialPageRoute<void>(
+                builder: (BuildContext context) =>
+                    QiblaPage(location: location),
+              ),
             ),
             item: MenuItem(
               title: l10n.qiblaDirection,
@@ -70,7 +70,7 @@ class MenuList extends StatelessWidget {
             ),
           ),
           GridItem(
-            onTap: () => showAppBottomSheet(context, doaDaily),
+            onTap: () => Navigator.pushNamed(context, '/doa-sehari-hari'),
             item: MenuItem(
               title: l10n.doaSehariHari,
               icon: Assets.icons.prayingHands.svg(width: 50, height: 50),

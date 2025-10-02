@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:quran_app/common/domain/pray.dart';
-import 'package:quran_app/modules/home/data/domain/doa_daily.dart';
 import 'package:quran_app/modules/home/domain/home_usecase.dart';
 import 'package:quran_app/modules/home/presentation/blocs/state/home_state.dart';
 
@@ -21,13 +20,11 @@ class HomeCubit extends Cubit<HomeState> {
         _homeUseCase.getCity(location),
         getTiming(date, location),
         getTiming(date.add(const Duration(days: 1)), location),
-        getDoaDaily(),
       ]);
 
       final city = results[0] as String;
       final timing = results[1] as List<Pray>;
       final tomorrowTiming = results[2] as List<Pray>;
-      final doaDaily = results[3] as List<DoaDaily>;
 
       timing.isEmpty
           ? emit(const HomeError('No Prayer Time Fetched'))
@@ -37,7 +34,6 @@ class HomeCubit extends Cubit<HomeState> {
                 currentLocationInCity: city,
                 todayTiming: timing,
                 tomorrowTiming: tomorrowTiming,
-                doaDaily: doaDaily,
               ),
             );
     } catch (e) {
@@ -47,11 +43,6 @@ class HomeCubit extends Cubit<HomeState> {
 
   Future<List<Pray>> getTiming(DateTime date, Location location) async {
     final res = await _homeUseCase.getTiming(date, location);
-    return res;
-  }
-
-  Future<List<DoaDaily>> getDoaDaily() async {
-    final res = await _homeUseCase.getDoaDaily();
     return res;
   }
 }

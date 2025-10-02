@@ -4,50 +4,50 @@ version: 2.2.1
 publish_to: none
 
 environment:
-  sdk: ">=2.19.0 <3.0.0"
-  flutter: 3.3.8
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.16.0"
 
 dependencies:
   adhan: ^2.0.0+1
   bloc: ^9.0.1
   date_picker_timeline: ^1.2.3
   equatable: ^2.0.5
-  feedback: ^3.1.0
+  feedback: ^3.2.0
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.1
-  flutter_email_sender: ^7.0.0
-  flutter_local_notifications: ^19.2.0
+  flutter_email_sender: ^8.0.0
+  flutter_local_notifications: ^19.4.2
   flutter_localizations:
     sdk: flutter
   flutter_native_splash: ^2.2.18
   flutter_qiblah: ^3.1.0+1
   flutter_screenutil: ^5.6.0
-  flutter_secure_storage: ^10.0.0-beta.4
-  flutter_svg: ^2.0.10+1
-  flutter_timezone: ^4.1.0
-  geocoding: ^3.0.0
-  geolocator: ^13.0.1
-  get_it: ^8.0.2
+  flutter_secure_storage: ^9.2.2
+  flutter_svg: ^2.2.1
+  flutter_timezone: ^5.0.0
+  geocoding: ^4.0.0
+  geolocator: ^13.0.4
+  get_it: ^8.2.0
   intl: ^0.20.2
-  just_audio: ^0.10.3
+  just_audio: ^0.10.5
   # notification_permissions: ^0.6.1 - Removed in favor of permission_handler
   path: ^1.9.0
   path_provider: ^2.0.12
-  permission_handler: ^12.0.0+1
+  permission_handler: ^12.0.1
   scrollable_positioned_list: ^0.3.5
   skeletonizer: ^2.1.0+1
   sqflite: ^2.3.3
 
 dev_dependencies:
   bloc_test: ^10.0.0
-  build_runner: ^2.4.9
-  flutter_gen_runner: ^5.4.0
-  flutter_launcher_icons: ^0.14.1
+  build_runner: ^2.9.0
+  flutter_gen_runner: ^5.12.0
+  flutter_launcher_icons: ^0.14.4
   flutter_test:
     sdk: flutter
   mocktail: ^1.0.4
-  very_good_analysis: ^7.0.0
+  very_good_analysis: ^10.0.0
 
 flutter_launcher_icons:
   android: "launcher_icon"

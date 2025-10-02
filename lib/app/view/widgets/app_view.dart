@@ -7,6 +7,7 @@ import 'package:quran_app/common/constants/constant.dart';
 import 'package:quran_app/common/global_variable.dart';
 import 'package:quran_app/common/themes/app_theme.dart';
 import 'package:quran_app/l10n/l10n.dart';
+import 'package:quran_app/modules/doa_sehari_hari/presentation/doa_sehari_hari_page.dart';
 import 'package:quran_app/modules/home/presentation/home_page.dart';
 import 'package:quran_app/modules/prayer_time/presentation/prayer_time_page.dart';
 import 'package:quran_app/modules/qibla/presentation/qibla_page.dart';
@@ -31,7 +32,8 @@ class AppView extends StatelessWidget {
           Colors.yellow,
         ],
       ),
-      feedbackBuilder: (context, onSubmit, scrollController) => CustomFeedbackForm(
+      feedbackBuilder: (context, onSubmit, scrollController) =>
+          CustomFeedbackForm(
         onSubmit: onSubmit,
         scrollController: scrollController,
       ),
@@ -49,7 +51,8 @@ class AppView extends StatelessWidget {
             builder: (ctx, child) {
               setupScreenUtil(ctx);
               return MediaQuery(
-                data: MediaQuery.of(ctx).copyWith(textScaler: TextScaler.noScaling),
+                data: MediaQuery.of(ctx)
+                    .copyWith(textScaler: TextScaler.noScaling),
                 child: ScrollConfiguration(
                   behavior: MyBehavior(),
                   child: child!,
@@ -83,6 +86,7 @@ class AppView extends StatelessWidget {
                       timestamp: DateTime.now(),
                     ),
                   ),
+              '/doa-sehari-hari': (context) => const DoaSehariHariPage(),
             },
           );
         },

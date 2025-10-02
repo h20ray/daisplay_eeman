@@ -17,8 +17,29 @@ class NotificationHelper {
   Future<void> _initialize() async {
     // Configure Timezone
     tz.initializeTimeZones();
-    final timeZone = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(timeZone));
+    try {
+      final timeZoneInfo = await FlutterTimezone.getLocalTimezone();
+      final timeZoneName = timeZoneInfo.toString();
+
+      // Handle common timezone mapping issues
+      var mappedTimeZone = timeZoneName;
+      if (timeZoneName.contains('Asia/Bangkok')) {
+        mappedTimeZone = 'Asia/Bangkok';
+      } else if (timeZoneName.contains('Indochina Time')) {
+        mappedTimeZone = 'Asia/Bangkok';
+      } else if (timeZoneName.contains('WIB')) {
+        mappedTimeZone = 'Asia/Jakarta';
+      } else if (timeZoneName.contains('WITA')) {
+        mappedTimeZone = 'Asia/Makassar';
+      } else if (timeZoneName.contains('WIT')) {
+        mappedTimeZone = 'Asia/Jayapura';
+      }
+
+      tz.setLocalLocation(tz.getLocation(mappedTimeZone));
+    } catch (e) {
+      // Fallback to UTC if timezone detection fails
+      tz.setLocalLocation(tz.UTC);
+    }
 
     // Initialize Notification
     const initializationSettingsDarwin = DarwinInitializationSettings();
