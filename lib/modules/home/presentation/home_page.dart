@@ -12,7 +12,12 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => HomeCubit(locator<HomeUseCaseImpl>())..init(DateTime.now()),
+      create: (_) {
+        final cubit = HomeCubit(locator<HomeUseCaseImpl>());
+        // Initialize asynchronously to avoid blocking the UI
+        Future.microtask(() => cubit.init(DateTime.now()));
+        return cubit;
+      },
       child: const BasePage.noPadding(child: HomeView()),
     );
   }

@@ -26,7 +26,8 @@ void showPreferencesDialog(
             backgroundColor: colorScheme.primary,
             title: Text(
               l10n.setAppearance,
-              style: context.displayLarge?.copyWith(color: colorScheme.secondary),
+              style:
+                  context.displayLarge?.copyWith(color: colorScheme.secondary),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -37,12 +38,14 @@ void showPreferencesDialog(
                   children: [
                     Text(
                       l10n.nightMode,
-                      style: context.bodySmall?.copyWith(color: colorScheme.secondary),
+                      style: context.bodySmall
+                          ?.copyWith(color: colorScheme.secondary),
                     ),
                     Switch.adaptive(
-                      value: context.watch<AppThemeCubit>().state == ThemeMode.dark,
+                      value: context.watch<AppThemeCubit>().state ==
+                          ThemeMode.dark,
                       activeTrackColor: colorScheme.secondary,
-                      activeColor: colorScheme.primary,
+                      activeThumbColor: colorScheme.primary,
                       activeThumbImage: Assets.images.mosque.provider(),
                       onChanged: (value) {
                         context.read<AppThemeCubit>().toggleTheme();
@@ -55,15 +58,18 @@ void showPreferencesDialog(
                   children: [
                     Text(
                       l10n.showX('Translation'),
-                      style: context.bodySmall?.copyWith(color: colorScheme.secondary),
+                      style: context.bodySmall
+                          ?.copyWith(color: colorScheme.secondary),
                     ),
                     Switch.adaptive(
                       value: state.userPreferences?.showTranslation ?? true,
                       activeTrackColor: colorScheme.secondary,
-                      activeColor: colorScheme.primary,
+                      activeThumbColor: colorScheme.primary,
                       onChanged: (value) {
                         context.read<SettingsCubit>().setPreferences(
-                              state.userPreferences?.copyWith(showTranslation: value) ?? const UserPreferences(),
+                              state.userPreferences
+                                      ?.copyWith(showTranslation: value) ??
+                                  const UserPreferences(),
                             );
                       },
                     ),
@@ -74,15 +80,18 @@ void showPreferencesDialog(
                   children: [
                     Text(
                       l10n.showX('Latin'),
-                      style: context.bodySmall?.copyWith(color: colorScheme.secondary),
+                      style: context.bodySmall
+                          ?.copyWith(color: colorScheme.secondary),
                     ),
                     Switch.adaptive(
                       value: state.userPreferences?.showLatin ?? true,
                       activeTrackColor: colorScheme.secondary,
-                      activeColor: colorScheme.primary,
+                      activeThumbColor: colorScheme.primary,
                       onChanged: (value) {
                         context.read<SettingsCubit>().setPreferences(
-                              state.userPreferences?.copyWith(showLatin: value) ?? const UserPreferences(),
+                              state.userPreferences
+                                      ?.copyWith(showLatin: value) ??
+                                  const UserPreferences(),
                             );
                       },
                     ),
@@ -94,11 +103,15 @@ void showPreferencesDialog(
                   children: [
                     Text(
                       l10n.xFontSize('Arabic'),
-                      style: context.bodySmall?.copyWith(color: colorScheme.secondary),
+                      style: context.bodySmall
+                          ?.copyWith(color: colorScheme.secondary),
                     ),
                     Text(
-                      state.userPreferences?.arabicFontSize?.toStringAsFixed(0) ?? '',
-                      style: context.bodySmall?.copyWith(color: colorScheme.secondary),
+                      state.userPreferences?.arabicFontSize
+                              ?.toStringAsFixed(0) ??
+                          '',
+                      style: context.bodySmall
+                          ?.copyWith(color: colorScheme.secondary),
                     ),
                   ],
                 ),
@@ -114,7 +127,9 @@ void showPreferencesDialog(
 
                   onChanged: (value) {
                     context.read<SettingsCubit>().setPreferences(
-                          state.userPreferences?.copyWith(arabicFontSize: value) ?? const UserPreferences(),
+                          state.userPreferences
+                                  ?.copyWith(arabicFontSize: value) ??
+                              const UserPreferences(),
                         );
                   },
                 ),
@@ -124,7 +139,8 @@ void showPreferencesDialog(
               OutlinedButton(
                 child: Text(
                   l10n.close,
-                  style: context.bodySmall?.copyWith(color: colorScheme.secondary),
+                  style:
+                      context.bodySmall?.copyWith(color: colorScheme.secondary),
                 ),
                 onPressed: () {
                   Navigator.of(context).pop();

@@ -1,7 +1,4 @@
-import 'dart:developer';
-
 import 'package:adhan/adhan.dart';
-import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:intl/intl.dart';
 import 'package:quran_app/common/common.dart';
@@ -12,8 +9,10 @@ class PrayerTimeRepositoryImpl extends PrayerTimeRepository {
   @override
   Future<List<Pray>> getTiming(DateTime date, Location location) async {
     final myCoordinates = Coordinates(location.latitude, location.longitude);
-    final params = CalculationMethod.singapore.getParameters()..madhab = Madhab.shafi;
-    final prayerTimes = PrayerTimes(myCoordinates, DateComponents.from(date), params);
+    final params = CalculationMethod.singapore.getParameters()
+      ..madhab = Madhab.shafi;
+    final prayerTimes =
+        PrayerTimes(myCoordinates, DateComponents.from(date), params);
     final list = [
       DateFormat('HH:mm').format(prayerTimes.fajr),
       DateFormat('HH:mm').format(prayerTimes.sunrise),
@@ -22,7 +21,10 @@ class PrayerTimeRepositoryImpl extends PrayerTimeRepository {
       DateFormat('HH:mm').format(prayerTimes.maghrib),
       DateFormat('HH:mm').format(prayerTimes.isha),
     ];
-    final timings = List<Pray>.generate(shalats.length, (index) => Pray(name: shalats[index], time: list[index]));
+    final timings = List<Pray>.generate(
+      shalats.length,
+      (index) => Pray(name: shalats[index], time: list[index]),
+    );
     return timings;
   }
 
@@ -30,7 +32,8 @@ class PrayerTimeRepositoryImpl extends PrayerTimeRepository {
   Future<Location> getLocation() async {
     final locationService = locator<LocationService>();
     final location = await locationService.getLocation();
-    return location ?? Location(latitude: 0, longitude: 0, timestamp: DateTime.now());
+    return location ??
+        Location(latitude: 0, longitude: 0, timestamp: DateTime.now());
   }
 
   @override

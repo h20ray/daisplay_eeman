@@ -13,34 +13,35 @@ class NotificationPermissionService {
 
   NotificationPermissionService._internal();
 
-  static final NotificationPermissionService _instance = NotificationPermissionService._internal();
+  static final NotificationPermissionService _instance =
+      NotificationPermissionService._internal();
 
   /// Check if notification permission is granted
   Future<bool> isNotificationPermissionGranted() async {
-    return await Permission.notification.isGranted;
+    return Permission.notification.isGranted;
   }
 
   /// Request notification permission
   /// Returns true if permission is granted, false otherwise
   Future<bool> requestNotificationPermission() async {
     final status = await Permission.notification.status;
-    
+
     // If permission is already granted, return true
     if (status.isGranted) {
       return true;
     }
-    
+
     // If permission is denied but not permanently, request it
     if (status.isDenied) {
       final result = await Permission.notification.request();
       return result.isGranted;
     }
-    
+
     // If permission is permanently denied, open app settings
     if (status.isPermanentlyDenied) {
       return false;
     }
-    
+
     // For other cases (restricted, limited, etc.)
     return false;
   }
@@ -49,10 +50,10 @@ class NotificationPermissionService {
   /// and guide the user to app settings if permanently denied
   Future<bool> showPermissionRationaleDialog(BuildContext context) async {
     final status = await Permission.notification.status;
-    
+
     // If already granted, no need for dialog
     if (status.isGranted) return true;
-    
+
     // For permanently denied, show settings dialog
     if (status.isPermanentlyDenied) {
       // ignore: use_build_context_synchronously
@@ -76,15 +77,15 @@ class NotificationPermissionService {
           ],
         ),
       );
-      
-      if (shouldOpenSettings == true) {
+
+      if (shouldOpenSettings ?? false) {
         await openAppSettings();
         // Check if permission was granted after returning from settings
-        return await Permission.notification.isGranted;
+        return Permission.notification.isGranted;
       }
       return false;
     }
-    
+
     // For first time request or previously denied (not permanently)
     // ignore: use_build_context_synchronously
     final shouldRequest = await showDialog<bool>(
@@ -107,12 +108,12 @@ class NotificationPermissionService {
         ],
       ),
     );
-    
-    if (shouldRequest == true) {
+
+    if (shouldRequest ?? false) {
       final result = await Permission.notification.request();
       return result.isGranted;
     }
-    
+
     return false;
   }
 }

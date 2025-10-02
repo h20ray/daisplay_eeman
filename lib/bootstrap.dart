@@ -24,12 +24,18 @@ class AppBlocObserver extends BlocObserver {
 
 Future<void> init() async {
   FlutterError.onError = (details) {
+    // Suppress SVG filter warnings as they don't affect functionality
+    if (details.exceptionAsString().contains('unhandled element <filter/>')) {
+      return;
+    }
     log(details.exceptionAsString(), stackTrace: details.stack);
   };
 
   Bloc.observer = AppBlocObserver();
   await ScreenUtil.ensureScreenSize();
-  NotificationHelper();
+
+  // Initialize notification helper asynchronously to avoid blocking UI
+  unawaited(Future.microtask(NotificationHelper.new));
   setStatusBar();
 
   /// Specifies the `SystemUiMode` to have visible when the application is running.
@@ -45,13 +51,14 @@ Future<void> init() async {
 }
 
 Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
-  await runZonedGuarded<Future<void>>(() async {
+  try {
     WidgetsFlutterBinding.ensureInitialized();
 
     await init();
 
     runApp(await builder());
-  }, (error, stack) {
-    log(error.toString(), error: error, stackTrace: stack);
-  });
+  } catch (error, stack) {
+    log('Bootstrap error: $error', error: error, stackTrace: stack);
+    rethrow;
+  }
 }

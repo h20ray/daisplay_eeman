@@ -8,7 +8,8 @@ import 'package:timezone/timezone.dart' as tz;
 class NotificationHelper {
   NotificationHelper() {
     flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-    _initialize();
+    // Initialize asynchronously to avoid blocking the main thread
+    Future.microtask(_initialize);
   }
 
   late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
@@ -21,7 +22,8 @@ class NotificationHelper {
 
     // Initialize Notification
     const initializationSettingsDarwin = DarwinInitializationSettings();
-    const initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const initializationSettings = InitializationSettings(
       iOS: initializationSettingsDarwin,
@@ -51,11 +53,13 @@ class NotificationHelper {
   }
 
   // get Notification Details
-  NotificationDetails getDetails(String sound, String title) => NotificationDetails(
+  NotificationDetails getDetails(String sound, String title) =>
+      NotificationDetails(
         android: AndroidNotificationDetails(
           'reminder',
           'adzan notification',
-          channelDescription: 'this notification is for adzan notification on prayer time page',
+          channelDescription:
+              'this notification is for adzan notification on prayer time page',
           importance: Importance.max,
           priority: Priority.high,
           sound: RawResourceAndroidNotificationSound(sound),
@@ -105,7 +109,8 @@ class NotificationHelper {
   /// Request IOS permissions
   void requestIOSPermissions() {
     flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(
           alert: true,
           badge: true,
@@ -114,5 +119,6 @@ class NotificationHelper {
   }
 
   Future<void> cancelAll() async => flutterLocalNotificationsPlugin.cancelAll();
-  Future<void> cancel(int id) async => flutterLocalNotificationsPlugin.cancel(id);
+  Future<void> cancel(int id) async =>
+      flutterLocalNotificationsPlugin.cancel(id);
 }

@@ -22,13 +22,27 @@ class App extends StatelessWidget {
           create: (context) => DatepickerCubit(),
         ),
         BlocProvider<AlarmListCubit>(
-          create: (context) => AlarmListCubit(locator<AlarmListLocalData>())..init(),
+          create: (context) {
+            final cubit = AlarmListCubit(locator<AlarmListLocalData>());
+            Future.microtask(cubit.init);
+            return cubit;
+          },
         ),
         BlocProvider<ListFilterPrayerTimeCubit>(
-          create: (context) => ListFilterPrayerTimeCubit(locator<PrayerTimeFilterListLocalData>())..init(),
+          create: (context) {
+            final cubit = ListFilterPrayerTimeCubit(
+              locator<PrayerTimeFilterListLocalData>(),
+            );
+            Future.microtask(cubit.init);
+            return cubit;
+          },
         ),
         BlocProvider<SettingsCubit>(
-          create: (context) => SettingsCubit(locator<SettingsUseCaseImpl>())..init(),
+          create: (context) {
+            final cubit = SettingsCubit(locator<SettingsUseCaseImpl>());
+            Future.microtask(cubit.init);
+            return cubit;
+          },
         ),
       ],
       child: const AppView(),
