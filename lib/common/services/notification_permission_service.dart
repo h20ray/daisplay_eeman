@@ -1,6 +1,7 @@
 // ignore_for_file: depend_on_referenced_packages
 
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// A service to handle notification permissions in a modern way
@@ -19,6 +20,26 @@ class NotificationPermissionService {
   /// Check if notification permission is granted
   Future<bool> isNotificationPermissionGranted() async {
     return Permission.notification.isGranted;
+  }
+
+  /// Check if exact alarm permission is granted (Android 12+)
+  Future<bool> isExactAlarmPermissionGranted() async {
+    final plugin = FlutterLocalNotificationsPlugin();
+    return await plugin
+            .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin>()
+            ?.canScheduleExactNotifications() ??
+        false;
+  }
+
+  /// Request exact alarm permission (Android 12+)
+  Future<bool> requestExactAlarmPermission() async {
+    final plugin = FlutterLocalNotificationsPlugin();
+    return await plugin
+            .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin>()
+            ?.requestExactAlarmsPermission() ??
+        false;
   }
 
   /// Request notification permission
@@ -115,5 +136,61 @@ class NotificationPermissionService {
     }
 
     return false;
+  }
+
+  /// Show a dialog to explain why exact alarm permission is needed (Android 12+)
+  Future<bool> showExactAlarmPermissionDialog(BuildContext context) async {
+    final isExactAlarmGranted = await isExactAlarmPermissionGranted();
+
+    // If already granted, return true
+    if (isExactAlarmGranted) return true;
+
+    // ignore: use_build_context_synchronously
+    final shouldRequest = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Exact Alarm Permission'),
+        content: const Text(
+          'This app needs exact alarm permission to schedule precise prayer time notifications. '
+          'Without this permission, notifications may not be delivered at the exact time. '
+          'Would you like to enable exact alarms?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No Thanks'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Allow'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldRequest ?? false) {
+      return requestExactAlarmPermission();
+    }
+
+    return false;
+  }
+
+  /// Check and request all required permissions for notifications
+  Future<bool> requestAllNotificationPermissions(BuildContext context) async {
+    // First, request basic notification permission
+    final notificationGranted = await requestNotificationPermission();
+    if (!notificationGranted) {
+      final dialogResult = await showPermissionRationaleDialog(context);
+      if (!dialogResult) return false;
+    }
+
+    // Then, request exact alarm permission for Android 12+
+    final exactAlarmGranted = await isExactAlarmPermissionGranted();
+    if (!exactAlarmGranted) {
+      final dialogResult = await showExactAlarmPermissionDialog(context);
+      if (!dialogResult) return false;
+    }
+
+    return true;
   }
 }

@@ -5,6 +5,8 @@ import 'package:just_audio/just_audio.dart';
 import 'package:quran_app/common/constants/constant.dart';
 import 'package:quran_app/common/extensions/dialog_extension.dart';
 import 'package:quran_app/common/extensions/text_theme_extension.dart';
+import 'package:quran_app/common/global_variable.dart';
+import 'package:quran_app/common/services/global_audio_manager.dart';
 import 'package:quran_app/l10n/l10n.dart';
 import 'package:quran_app/modules/surah_list/data/domain/surah_model.dart';
 
@@ -13,13 +15,22 @@ part '../state/murattal_state.dart';
 class MurattalCubit extends Cubit<MurattalState> {
   MurattalCubit() : super(const MurattalInitial([]));
 
+  final GlobalAudioManager _audioManager = locator<GlobalAudioManager>();
   AudioPlayer player = AudioPlayer();
   late List<AudioSource> audioSources;
   bool errorAlreadyShowed = false;
 
   void init(BuildContext context, Surah surah) {
     emit(MurattalLoading());
-    final audioFileName = List.generate(surah.numberOfVerses ?? 1, (index) {
+
+    // Register this player with the global audio manager
+    _audioManager.registerJustAudioPlayer(player);
+
+    // Limit the number of verses to prevent memory issues
+    final maxVerses =
+        (surah.numberOfVerses ?? 1).clamp(1, 50); // Limit to 50 verses max
+
+    final audioFileName = List.generate(maxVerses, (index) {
       final verseNumber = index + 1;
       return AudioSource.uri(
         Uri.parse(
@@ -30,7 +41,10 @@ class MurattalCubit extends Cubit<MurattalState> {
 
     // Add Bismillah audio if not surah 1
     if (surah.number != 1) {
-      audioFileName.insert(0, AudioSource.uri(Uri.parse('$baseAudioUrl/001001.mp3')));
+      audioFileName.insert(
+        0,
+        AudioSource.uri(Uri.parse('$baseAudioUrl/001001.mp3')),
+      );
     }
 
     audioSources = audioFileName;
@@ -73,20 +87,37 @@ class MurattalCubit extends Cubit<MurattalState> {
 
   Future<void> play(BuildContext context) async {
     try {
+      // Stop all other just_audio players before starting this one
+      await _audioManager.stopAllJustAudioPlayers();
+
+      // Stop radio if it's playing to ensure clean audio session
+      await _audioManager.stopRadioIfPlaying();
+
+      // Add a delay to ensure audio session is completely released
+      await Future<void>.delayed(
+          const Duration(milliseconds: 300)); // Reduced from 500ms
+
       final internet = await checkInternetConnection();
-      if (internet && !player.playing) {
-        await player.setAudioSources(
-          audioSources,
-          initialIndex: 0,
-          initialPosition: Duration.zero,
-        );
+      if (internet) {
+        // Ensure player is in a valid state before setting audio sources
+        if (player.processingState == ProcessingState.idle ||
+            player.processingState == ProcessingState.completed) {
+          await player.setAudioSources(
+            audioSources,
+            initialIndex: 0,
+            initialPosition: Duration.zero,
+          );
+        }
+
+        // Add another small delay after setting sources
+        await Future<void>.delayed(
+            const Duration(milliseconds: 100)); // Reduced from 200ms
       } else {
-        if (!internet) throw PlayerException(0, 'Source error',0);
+        throw PlayerException(0, 'Source error', 0);
       }
 
       emit(MurattalPlaying());
-      await player.play();
-      await player.stop();
+      await _audioManager.startWithFadeIn(player);
     } on PlayerException catch (e) {
       if (e.message.toString() == 'Source error') {
         context.showAppDialog(
@@ -97,6 +128,8 @@ class MurattalCubit extends Cubit<MurattalState> {
           ),
         );
       }
+    } catch (e) {
+      debugPrint('Error playing murattal: $e');
     }
   }
 
@@ -106,7 +139,7 @@ class MurattalCubit extends Cubit<MurattalState> {
         emit(MurattalPaused());
         await player.pause();
       } else {
-        throw PlayerException(0, 'Source error',0);
+        throw PlayerException(0, 'Source error', 0);
       }
     } on PlayerException catch (e) {
       if (e.message.toString() == 'Source error') {
@@ -122,8 +155,17 @@ class MurattalCubit extends Cubit<MurattalState> {
   }
 
   void dispose() {
-    player
-      ..stop()
-      ..dispose();
+    try {
+      // Unregister from global audio manager before disposing
+      _audioManager.unregisterJustAudioPlayer(player);
+      player
+        ..stop()
+        ..dispose();
+
+      // Clean up unused players to free memory
+      _audioManager.cleanupUnusedPlayers();
+    } catch (e) {
+      debugPrint('Error disposing murattal cubit: $e');
+    }
   }
 }

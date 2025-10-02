@@ -24,11 +24,21 @@ class AppBlocObserver extends BlocObserver {
 
 Future<void> init() async {
   FlutterError.onError = (details) {
-    // Suppress SVG filter warnings as they don't affect functionality
-    if (details.exceptionAsString().contains('unhandled element <filter/>')) {
+    final errorString = details.exceptionAsString();
+
+    // Suppress SVG-related warnings as they don't affect functionality
+    if (errorString.contains('unhandled element <filter/>') ||
+        errorString.contains('unhandled element <defs/>') ||
+        errorString.contains('unhandled element <style/>') ||
+        errorString.contains('unhandled element <gradient/>') ||
+        errorString.contains('Svg loader') ||
+        errorString.contains('Picture key: Svg loader') ||
+        errorString.contains('EGL Error: Success') ||
+        errorString.contains('impeller/toolkit/egl')) {
       return;
     }
-    log(details.exceptionAsString(), stackTrace: details.stack);
+
+    log(errorString, stackTrace: details.stack);
   };
 
   Bloc.observer = AppBlocObserver();

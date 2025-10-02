@@ -44,7 +44,7 @@ class NotificationHelper {
     // Initialize Notification
     const initializationSettingsDarwin = DarwinInitializationSettings();
     const initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@mipmap/launcher_icon');
 
     const initializationSettings = InitializationSettings(
       iOS: initializationSettingsDarwin,
@@ -114,17 +114,61 @@ class NotificationHelper {
     required String title,
     required String sound,
   }) async {
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      id,
-      'Waktu $title telah tiba!',
-      'Sudah waktunya untuk $title',
-      convertTime(hour, minutes),
-      getDetails(sound, title),
-      // androidAllowWhileIdle: true,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.dateAndTime,
-      payload: 'It could be anything you pass',
-    );
+    try {
+      // Check if exact alarms are permitted before scheduling
+      final androidPlugin =
+          flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+
+      if (androidPlugin != null) {
+        final canScheduleExact =
+            await androidPlugin.canScheduleExactNotifications();
+        if (canScheduleExact == false) {
+          // Fallback to inexact scheduling if exact alarms are not permitted
+          await flutterLocalNotificationsPlugin.zonedSchedule(
+            id,
+            'Waktu $title telah tiba!',
+            'Sudah waktunya untuk $title',
+            convertTime(hour, minutes),
+            getDetails(sound, title),
+            androidScheduleMode: AndroidScheduleMode.inexact,
+            matchDateTimeComponents: DateTimeComponents.dateAndTime,
+            payload: 'It could be anything you pass',
+          );
+          return;
+        }
+      }
+
+      // Schedule with exact alarm if permitted
+      await flutterLocalNotificationsPlugin.zonedSchedule(
+        id,
+        'Waktu $title telah tiba!',
+        'Sudah waktunya untuk $title',
+        convertTime(hour, minutes),
+        getDetails(sound, title),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.dateAndTime,
+        payload: 'It could be anything you pass',
+      );
+    } catch (e) {
+      // Log the error and fallback to inexact scheduling
+      // Note: In production, consider using a proper logging service
+      try {
+        await flutterLocalNotificationsPlugin.zonedSchedule(
+          id,
+          'Waktu $title telah tiba!',
+          'Sudah waktunya untuk $title',
+          convertTime(hour, minutes),
+          getDetails(sound, title),
+          androidScheduleMode: AndroidScheduleMode.inexact,
+          matchDateTimeComponents: DateTimeComponents.dateAndTime,
+          payload: 'It could be anything you pass',
+        );
+      } catch (fallbackError) {
+        // Re-throw the original error for proper error handling
+        rethrow;
+      }
+    }
   }
 
   /// Request IOS permissions
