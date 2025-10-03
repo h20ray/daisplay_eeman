@@ -9,11 +9,11 @@ class AppLocalizationsId extends AppLocalizations {
   AppLocalizationsId([String locale = 'id']) : super(locale);
 
   @override
-  String get appName => 'Eeman';
+  String get appName => 'Dais Play';
 
   @override
   String get appInfo =>
-      'Eeman - Aplikasi Islami dengan fitur doa sehari-hari, Quran offline, jadwal sholat, tasbih digital, dan alarm sholat.\n\nbuilt with <3 by Wafastarz.';
+      'Dais Play - 107.9 FM - Aplikasi Islami dengan fitur doa sehari-hari, Quran offline, jadwal sholat, tasbih digital, dan radio online.\n\nbuilt with <3 by Tujuhcahaya. \nCredit to Wafastarz.';
 
   @override
   String get back => 'Kembali';

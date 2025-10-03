@@ -26,11 +26,7 @@ class MurattalCubit extends Cubit<MurattalState> {
     // Register this player with the global audio manager
     _audioManager.registerJustAudioPlayer(player);
 
-    // Limit the number of verses to prevent memory issues
-    final maxVerses =
-        (surah.numberOfVerses ?? 1).clamp(1, 50); // Limit to 50 verses max
-
-    final audioFileName = List.generate(maxVerses, (index) {
+    final audioFileName = List.generate(surah.numberOfVerses ?? 1, (index) {
       final verseNumber = index + 1;
       return AudioSource.uri(
         Uri.parse(
@@ -94,8 +90,7 @@ class MurattalCubit extends Cubit<MurattalState> {
       await _audioManager.stopRadioIfPlaying();
 
       // Add a delay to ensure audio session is completely released
-      await Future<void>.delayed(
-          const Duration(milliseconds: 300)); // Reduced from 500ms
+      await Future<void>.delayed(const Duration(milliseconds: 300));
 
       final internet = await checkInternetConnection();
       if (internet) {
@@ -108,16 +103,12 @@ class MurattalCubit extends Cubit<MurattalState> {
             initialPosition: Duration.zero,
           );
         }
-
-        // Add another small delay after setting sources
-        await Future<void>.delayed(
-            const Duration(milliseconds: 100)); // Reduced from 200ms
       } else {
         throw PlayerException(0, 'Source error', 0);
       }
 
       emit(MurattalPlaying());
-      await _audioManager.startWithFadeIn(player);
+      await player.play();
     } on PlayerException catch (e) {
       if (e.message.toString() == 'Source error') {
         context.showAppDialog(
@@ -128,8 +119,6 @@ class MurattalCubit extends Cubit<MurattalState> {
           ),
         );
       }
-    } catch (e) {
-      debugPrint('Error playing murattal: $e');
     }
   }
 
@@ -155,17 +144,10 @@ class MurattalCubit extends Cubit<MurattalState> {
   }
 
   void dispose() {
-    try {
-      // Unregister from global audio manager before disposing
-      _audioManager.unregisterJustAudioPlayer(player);
-      player
-        ..stop()
-        ..dispose();
-
-      // Clean up unused players to free memory
-      _audioManager.cleanupUnusedPlayers();
-    } catch (e) {
-      debugPrint('Error disposing murattal cubit: $e');
-    }
+    // Unregister from global audio manager before disposing
+    _audioManager.unregisterJustAudioPlayer(player);
+    player
+      ..stop()
+      ..dispose();
   }
 }

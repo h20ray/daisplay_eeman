@@ -21,24 +21,33 @@ class RadioLoaded extends RadioState {
     required this.currentStation,
     required this.isPlaying,
     required this.volume,
+    this.metadata,
+    this.artwork,
   });
 
   final RadioStation? currentStation;
   final bool isPlaying;
   final double volume;
+  final List<String>? metadata;
+  final String? artwork;
 
   @override
-  List<Object?> get props => [currentStation, isPlaying, volume];
+  List<Object?> get props =>
+      [currentStation, isPlaying, volume, metadata, artwork];
 
   RadioLoaded copyWith({
     RadioStation? currentStation,
     bool? isPlaying,
     double? volume,
+    List<String>? metadata,
+    String? artwork,
   }) {
     return RadioLoaded(
       currentStation: currentStation ?? this.currentStation,
       isPlaying: isPlaying ?? this.isPlaying,
       volume: volume ?? this.volume,
+      metadata: metadata ?? this.metadata,
+      artwork: artwork ?? this.artwork,
     );
   }
 }

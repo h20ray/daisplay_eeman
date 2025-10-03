@@ -18,6 +18,4 @@ class RadioUseCase {
   RadioStation? get currentStation => _repository.currentStation;
   bool get isPlaying => _repository.isPlaying;
   double get volume => _repository.volume;
-  bool get wasPlayingBeforeJustAudio => _repository.wasPlayingBeforeJustAudio;
-  Future<void> restartIfWasPlaying() => _repository.restartIfWasPlaying();
 }

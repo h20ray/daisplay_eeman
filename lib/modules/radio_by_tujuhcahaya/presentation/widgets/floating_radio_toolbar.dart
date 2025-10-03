@@ -5,8 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:quran_app/common/extensions/text_theme_extension.dart';
 import 'package:quran_app/common/global_variable.dart';
 import 'package:quran_app/common/services/global_audio_manager.dart';
+import 'package:quran_app/modules/radio_by_tujuhcahaya/config/radio_config.dart';
 import 'package:quran_app/modules/radio_by_tujuhcahaya/domain/entities/radio_station.dart';
-import 'package:quran_app/modules/radio_by_tujuhcahaya/domain/services/radio_config_service.dart';
 import 'package:quran_app/modules/radio_by_tujuhcahaya/presentation/blocs/cubit/radio_cubit.dart';
 import 'package:quran_app/modules/radio_by_tujuhcahaya/presentation/blocs/state/radio_state.dart';
 import 'package:quran_app/modules/radio_by_tujuhcahaya/presentation/pages/radio_page.dart';
@@ -32,19 +32,18 @@ class _FloatingRadioToolbarState extends State<FloatingRadioToolbar> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<RadioCubit, RadioState>(
-      buildWhen: (previous, current) {
-        // Only rebuild when the state actually changes
-        return previous != current;
-      },
       builder: (context, state) {
-        // Show toolbar if radio is loaded (playing or not) or if it's initial state (to allow starting)
-        if (state is! RadioLoaded && state is! RadioInitial) {
+        // Keep toolbar visible for Initial, Loading, and Loaded states to avoid blink
+        if (state is! RadioLoaded &&
+            state is! RadioInitial &&
+            state is! RadioLoading) {
           return const SizedBox.shrink();
         }
 
-        // Get current station info
+        // Get current station info (toolbar uses static config; ignore metadata)
         RadioStation? currentStation;
         var isPlaying = false;
+        final isLoading = state is RadioLoading;
 
         if (state is RadioLoaded) {
           currentStation = state.currentStation;
@@ -78,23 +77,32 @@ class _FloatingRadioToolbarState extends State<FloatingRadioToolbar> {
                 child: Padding(
                   padding:
                       EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
-                  child: Row(
-                    children: [
-                      // Album art
-                      _buildAlbumArt(context, currentStation),
-                      SizedBox(width: 20.w),
-                      // Now playing info
-                      Expanded(
-                        child: _buildNowPlayingInfo(
-                          context,
-                          currentStation,
-                          isPlaying,
-                        ),
-                      ),
-                      SizedBox(width: 20.w),
-                      // Play/Stop button
-                      _buildPlayStopButton(context, isPlaying),
-                    ],
+                  child: StreamBuilder<bool>(
+                    initialData: _audioManager.isJustAudioPlaying,
+                    stream: _audioManager.justAudioPlayingStream,
+                    builder: (context, snap) {
+                      final isQuranPlaying = snap.data ?? false;
+                      final effectiveIsPlaying = isPlaying && !isQuranPlaying;
+                      return Row(
+                        children: [
+                          _buildAlbumArt(context, currentStation),
+                          SizedBox(width: 20.w),
+                          Expanded(
+                            child: _buildNowPlayingInfo(
+                              context,
+                              null,
+                              effectiveIsPlaying,
+                            ),
+                          ),
+                          SizedBox(width: 20.w),
+                          _buildPlayStopButton(
+                            context,
+                            effectiveIsPlaying,
+                            isLoading,
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -152,7 +160,7 @@ class _FloatingRadioToolbarState extends State<FloatingRadioToolbar> {
 
   Widget _buildNowPlayingInfo(
     BuildContext context,
-    RadioStation? station,
+    RadioStation? _,
     bool isPlaying,
   ) {
     final config = _radioConfigService.currentConfig;
@@ -189,9 +197,9 @@ class _FloatingRadioToolbarState extends State<FloatingRadioToolbar> {
           ],
         ),
         SizedBox(height: 6.h),
-        // Station title
+        // Station title (static from config)
         Text(
-          station?.title ?? config.title,
+          config.title,
           style: context.bodyMedium?.copyWith(
             color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w700,
@@ -200,32 +208,23 @@ class _FloatingRadioToolbarState extends State<FloatingRadioToolbar> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        // Artist info
-        if (station?.artist != null && station!.artist!.isNotEmpty) ...[
-          SizedBox(height: 4.h),
-          Text(
-            station.artist!,
-            style: context.bodySmall?.copyWith(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.7),
-              fontSize: 28.sp,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+        // No dynamic metadata line; keep UI static per config
       ],
     );
   }
 
-  Widget _buildPlayStopButton(BuildContext context, bool isPlaying) {
+  Widget _buildPlayStopButton(
+    BuildContext context,
+    bool isPlaying,
+    bool isLoading,
+  ) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => _handlePlayStop(context, isPlaying),
+        onTap: () {
+          if (isLoading) return;
+          _handlePlayStop(context, isPlaying);
+        },
         borderRadius: BorderRadius.circular(40.r),
         child: Container(
           width: 80.w,
@@ -244,11 +243,22 @@ class _FloatingRadioToolbarState extends State<FloatingRadioToolbar> {
               ),
             ],
           ),
-          child: Icon(
-            isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-            color: Theme.of(context).colorScheme.onPrimary,
-            size: 40.sp,
-          ),
+          child: isLoading
+              ? SizedBox(
+                  width: 40.sp,
+                  height: 40.sp,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).colorScheme.onPrimary,
+                    ),
+                  ),
+                )
+              : Icon(
+                  isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  size: 40.sp,
+                ),
         ),
       ),
     );
@@ -258,7 +268,7 @@ class _FloatingRadioToolbarState extends State<FloatingRadioToolbar> {
     if (isPlaying) {
       // Stop radio and notify audio manager
       context.read<RadioCubit>().stopRadio();
-      _audioManager.setRadioPlaying(isPlaying: false);
+      _audioManager.isRadioPlaying = false;
     } else {
       // Start default radio if not playing
       _startDefaultRadio(context);
@@ -275,7 +285,7 @@ class _FloatingRadioToolbarState extends State<FloatingRadioToolbar> {
     );
 
     // Notify audio manager that radio is starting
-    _audioManager.setRadioPlaying(isPlaying: true);
+    _audioManager.isRadioPlaying = true;
     context.read<RadioCubit>().playRadio(defaultStation);
   }
 

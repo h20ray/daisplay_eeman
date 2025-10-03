@@ -97,13 +97,13 @@ abstract class AppLocalizations {
   /// No description provided for @appName.
   ///
   /// In id, this message translates to:
-  /// **'Eeman'**
+  /// **'Dais Play'**
   String get appName;
 
   /// No description provided for @appInfo.
   ///
   /// In id, this message translates to:
-  /// **'Eeman - Aplikasi Islami dengan fitur doa sehari-hari, Quran offline, jadwal sholat, tasbih digital, dan alarm sholat.\n\nbuilt with <3 by Wafastarz.'**
+  /// **'Dais Play - 107.9 FM - Aplikasi Islami dengan fitur doa sehari-hari, Quran offline, jadwal sholat, tasbih digital, dan radio online.\n\nbuilt with <3 by Tujuhcahaya. \nCredit to Wafastarz.'**
   String get appInfo;
 
   /// No description provided for @back.

@@ -11,6 +11,4 @@ abstract class RadioRepository {
   RadioStation? get currentStation;
   bool get isPlaying;
   double get volume;
-  bool get wasPlayingBeforeJustAudio;
-  Future<void> restartIfWasPlaying();
 }

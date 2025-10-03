@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 
 String get baseAudioUrl => 'https://everyayah.com/data/Alafasy_128kbps';
 
-String get emailForReceivingEmailFeedback => 'wafastarzteam@gmail.com';
+String get emailForReceivingEmailFeedback => 'andoru.ray@gmail.com';
 
 List<String> get shalats => [
       'Subuh',
@@ -135,9 +135,12 @@ void setupScreenUtil(BuildContext context) {
   );
 }
 
-bool isSmallPhoneHeight(BuildContext context) => MediaQuery.of(context).size.height < 700;
-bool isReallySmallPhoneHeight(BuildContext context) => MediaQuery.of(context).size.height < 600;
-bool isBigPhoneHeight(BuildContext context) => MediaQuery.of(context).size.height > 1200;
+bool isSmallPhoneHeight(BuildContext context) =>
+    MediaQuery.of(context).size.height < 700;
+bool isReallySmallPhoneHeight(BuildContext context) =>
+    MediaQuery.of(context).size.height < 600;
+bool isBigPhoneHeight(BuildContext context) =>
+    MediaQuery.of(context).size.height > 1200;
 
 /// Setting height and width
 double setWidth(double width) => ScreenUtil().setWidth(width);

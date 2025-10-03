@@ -1,7 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:quran_app/common/common.dart';
 import 'package:quran_app/common/global_variable.dart';
-import 'package:quran_app/modules/radio_by_tujuhcahaya/domain/services/radio_config_service.dart';
+import 'package:quran_app/modules/radio_by_tujuhcahaya/config/radio_config.dart';
 
 void setupLocatorCommon() {
   // *LocalDataService
