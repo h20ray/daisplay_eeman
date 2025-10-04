@@ -16,6 +16,23 @@ allprojects {
         google()
         mavenCentral()
     }
+    
+    // Ensure all subprojects use Java 17
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+            }
+        }
+        
+        // Suppress Java 8 obsolete warnings for all projects
+        project.tasks.withType(JavaCompile) {
+            options.compilerArgs += ["-Xlint:-options"]
+        }
+    }
 }
 
 rootProject.buildDir = '../build'

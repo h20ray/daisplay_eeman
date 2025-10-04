@@ -18,7 +18,7 @@ if (flutterRoot == null) {
 
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
-    flutterVersionCode = '7'
+    flutterVersionCode = '4'
 }
 
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
@@ -36,6 +36,11 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace "com.mkhoirulwafa.quran_app"
     compileSdkVersion 36
+    
+    // Suppress Java 8 obsolete warnings
+    tasks.withType(JavaCompile) {
+        options.compilerArgs += ["-Xlint:-options"]
+    }
 
     compileOptions {
         coreLibraryDesugaringEnabled true
@@ -54,10 +59,13 @@ android {
     defaultConfig {
         applicationId "id.dais.play"
         minSdkVersion flutter.minSdkVersion
-        targetSdkVersion 36
+        targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+        }
     }
 
     signingConfigs {
