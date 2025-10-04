@@ -16,6 +16,8 @@ class RadioCubit extends Cubit<RadioState> {
   StreamSubscription<RadioStation>? _currentStationSubscription;
   StreamSubscription<double>? _volumeSubscription;
   StreamSubscription<bool>? _justAudioPlayingSubscription;
+  StreamSubscription<AudioQuality>? _audioQualitySubscription;
+  StreamSubscription<double>? _audioLevelSubscription;
 
   // State management to prevent rapid toggling
   bool _isActionInProgress = false;
@@ -101,6 +103,34 @@ class RadioCubit extends Cubit<RadioState> {
         emit(RadioError('Audio manager error: $error'));
       },
     );
+
+    // Listen for audio quality changes
+    _audioQualitySubscription = _radioUseCase.audioQualityStream.listen(
+      (audioQuality) {
+        if (isClosed) return;
+        if (state is RadioLoaded) {
+          emit((state as RadioLoaded).copyWith(audioQuality: audioQuality));
+        }
+      },
+      onError: (Object error) {
+        if (isClosed) return;
+        emit(RadioError('Audio quality error: $error'));
+      },
+    );
+
+    // Listen for audio level changes
+    _audioLevelSubscription = _radioUseCase.audioLevelStream.listen(
+      (audioLevel) {
+        if (isClosed) return;
+        if (state is RadioLoaded) {
+          emit((state as RadioLoaded).copyWith(audioLevel: audioLevel));
+        }
+      },
+      onError: (Object error) {
+        if (isClosed) return;
+        emit(RadioError('Audio level error: $error'));
+      },
+    );
   }
 
   Future<void> playRadio(RadioStation station) async {
@@ -151,13 +181,15 @@ class RadioCubit extends Cubit<RadioState> {
       await _radioUseCase.stopRadio();
       if (isClosed) return;
       // Emit RadioLoaded with isPlaying: false to preserve volume information
-      emit(
-        RadioLoaded(
-          currentStation: null,
-          isPlaying: false,
-          volume: _radioUseCase.volume,
-        ),
-      );
+        emit(
+          RadioLoaded(
+            currentStation: null,
+            isPlaying: false,
+            volume: _radioUseCase.volume,
+            audioQuality: _radioUseCase.audioQuality,
+            audioLevel: _radioUseCase.audioLevel,
+          ),
+        );
     } catch (e) {
       if (isClosed) return;
       emit(RadioError(e.toString()));
@@ -201,6 +233,8 @@ class RadioCubit extends Cubit<RadioState> {
             currentStation: currentStation,
             isPlaying: _radioUseCase.isPlaying,
             volume: volume,
+            audioQuality: _radioUseCase.audioQuality,
+            audioLevel: _radioUseCase.audioLevel,
           ),
         );
       }
@@ -216,6 +250,8 @@ class RadioCubit extends Cubit<RadioState> {
             currentStation: station,
             isPlaying: true,
             volume: _radioUseCase.volume,
+            audioQuality: _radioUseCase.audioQuality,
+            audioLevel: _radioUseCase.audioLevel,
           ),
         );
       }
@@ -228,12 +264,16 @@ class RadioCubit extends Cubit<RadioState> {
     _currentStationSubscription?.cancel();
     _volumeSubscription?.cancel();
     _justAudioPlayingSubscription?.cancel();
+    _audioQualitySubscription?.cancel();
+    _audioLevelSubscription?.cancel();
 
     // Clean up any ongoing operations
     _isPlayingSubscription = null;
     _currentStationSubscription = null;
     _volumeSubscription = null;
     _justAudioPlayingSubscription = null;
+    _audioQualitySubscription = null;
+    _audioLevelSubscription = null;
 
     return super.close();
   }

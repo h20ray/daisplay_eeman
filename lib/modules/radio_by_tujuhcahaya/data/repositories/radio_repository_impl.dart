@@ -9,6 +9,8 @@ import 'package:quran_app/common/services/global_audio_manager.dart';
 import 'package:quran_app/modules/radio_by_tujuhcahaya/config/radio_config.dart';
 import 'package:quran_app/modules/radio_by_tujuhcahaya/domain/entities/radio_station.dart';
 import 'package:quran_app/modules/radio_by_tujuhcahaya/domain/repositories/radio_repository.dart';
+import 'package:quran_app/modules/radio_by_tujuhcahaya/domain/services/audio_level_detector.dart';
+import 'package:quran_app/modules/radio_by_tujuhcahaya/presentation/blocs/state/radio_state.dart';
 import 'package:radio_player/radio_player.dart';
 import 'package:volume_regulator/volume_regulator.dart';
 
@@ -33,6 +35,11 @@ class RadioRepositoryImpl implements RadioRepository {
   Timer? _debounceTimer;
   bool _isProcessingPlaybackState = false;
   StreamSubscription<int>? _volumeSubscription;
+  
+  // Audio level detection
+  AudioLevelDetector? _audioLevelDetector;
+  StreamSubscription<AudioQuality>? _audioQualitySubscription;
+  StreamSubscription<double>? _audioLevelSubscription;
 
   StreamSubscription<PlaybackState>? _playbackStateSubscription;
   StreamSubscription<Metadata>? _metadataSubscription;
@@ -40,6 +47,9 @@ class RadioRepositoryImpl implements RadioRepository {
   void _initializeRadioPlayer() {
     // Initialize system volume
     _initializeVolume();
+
+    // Initialize audio level detection
+    _initializeAudioLevelDetection();
 
     // Check current playback state on initialization
     _checkCurrentPlaybackState();
@@ -84,10 +94,12 @@ class RadioRepositoryImpl implements RadioRepository {
               }
               _audioManager.isRadioPlaying = playing;
 
-              // Save or clear state based on playing status
+              // Start/stop audio level detection based on actual playback state
               if (playing) {
+                _audioLevelDetector?.startMonitoring();
                 _saveRadioState();
               } else {
+                _audioLevelDetector?.stopMonitoring();
                 _clearRadioState();
               }
             }
@@ -160,9 +172,47 @@ class RadioRepositoryImpl implements RadioRepository {
     });
   }
 
+  void _initializeAudioLevelDetection() {
+    final config = _configService.currentConfig;
+    _audioLevelDetector = AudioLevelDetector(
+      liveContentThreshold: config.liveContentThreshold,
+      noiseThreshold: config.noiseThreshold,
+      analysisInterval: config.audioAnalysisInterval,
+      offAirDetectionDuration: config.offAirDetectionDuration,
+    );
+
+    // Listen to audio quality changes
+    _audioQualitySubscription = _audioLevelDetector!.audioQualityStream.listen(
+      (quality) {
+        // Audio quality changes are handled by the cubit
+      },
+      onError: (error) {
+        // Handle audio quality detection errors silently
+      },
+    );
+
+    // Listen to audio level changes
+    _audioLevelSubscription = _audioLevelDetector!.audioLevelStream.listen(
+      (level) {
+        // Audio level changes are handled by the cubit
+      },
+      onError: (error) {
+        // Handle audio level detection errors silently
+      },
+    );
+  }
+
   void _checkCurrentPlaybackState() {
     // Restore state from persistent storage when app reopens
-    _restoreRadioState();
+    _restoreRadioState().then((_) {
+      // After restoration, emit the current state to ensure UI is synchronized
+      if (!_isPlayingController.isClosed) {
+        _isPlayingController.add(_isPlaying);
+      }
+      if (!_currentStationController.isClosed && _currentStation != null) {
+        _currentStationController.add(_currentStation!);
+      }
+    });
   }
 
   Future<void> _restoreRadioState() async {
@@ -172,7 +222,7 @@ class RadioRepositoryImpl implements RadioRepository {
       final savedStationJson =
           await _secureStorage.read(key: 'radio_current_station');
 
-      if (savedIsPlaying == 'true' && savedStationJson != null) {
+      if (savedIsPlaying == 'true' && savedStationJson != null && _configService.currentConfig.autoResumeOnAppStart) {
         // Radio was playing when app was closed, restore the state
         final stationMap = jsonDecode(savedStationJson) as Map<String, dynamic>;
         final restoredStation = RadioStation(
@@ -186,17 +236,31 @@ class RadioRepositoryImpl implements RadioRepository {
         _isPlaying = true;
         _currentStation = restoredStation;
         _audioManager.isRadioPlaying = true;
-
-        // Emit restored state
-        if (!_isPlayingController.isClosed) {
-          _isPlayingController.add(true);
-        }
-        if (!_currentStationController.isClosed) {
-          _currentStationController.add(restoredStation);
-        }
+        
+        // Auto-resume the radio playback
+        await _autoResumeRadio(restoredStation);
       }
     } catch (e) {
       // If restoration fails, clear any corrupted data
+      await _clearRadioState();
+    }
+  }
+
+  Future<void> _autoResumeRadio(RadioStation station) async {
+    try {
+      // Set the station and start playing
+      await RadioPlayer.setStation(
+        title: station.title,
+        url: station.url,
+        logoAssetPath: station.imagePath.isNotEmpty ? station.imagePath : null,
+      );
+      
+      await RadioPlayer.play();
+      
+      // Start audio level detection
+      _audioLevelDetector?.startMonitoring();
+    } catch (e) {
+      // If auto-resume fails, clear the state
       await _clearRadioState();
     }
   }
@@ -280,6 +344,9 @@ class RadioRepositoryImpl implements RadioRepository {
   @override
   Future<void> stopRadio() async {
     try {
+      // Stop audio level detection first
+      _audioLevelDetector?.stopMonitoring();
+      
       await RadioPlayer.reset();
       _currentStation = null;
       _audioManager.isRadioPlaying = false;
@@ -322,6 +389,14 @@ class RadioRepositoryImpl implements RadioRepository {
   Stream<double> get volumeStream => _volumeController.stream;
 
   @override
+  Stream<AudioQuality> get audioQualityStream => 
+      _audioLevelDetector?.audioQualityStream ?? Stream.value(AudioQuality.unknown);
+
+  @override
+  Stream<double> get audioLevelStream => 
+      _audioLevelDetector?.audioLevelStream ?? Stream.value(0);
+
+  @override
   RadioStation? get currentStation => _currentStation;
 
   @override
@@ -330,12 +405,21 @@ class RadioRepositoryImpl implements RadioRepository {
   @override
   double get volume => _volume;
 
+  @override
+  AudioQuality get audioQuality => _audioLevelDetector?.currentQuality ?? AudioQuality.unknown;
+
+  @override
+  double get audioLevel => _audioLevelDetector?.currentAudioLevel ?? 0.0;
+
   void dispose() {
     _audioManager.unregisterStopRadioCallback();
     _debounceTimer?.cancel();
     _playbackStateSubscription?.cancel();
     _metadataSubscription?.cancel();
     _volumeSubscription?.cancel();
+    _audioQualitySubscription?.cancel();
+    _audioLevelSubscription?.cancel();
+    _audioLevelDetector?.dispose();
     _isPlayingController.close();
     _currentStationController.close();
     _volumeController.close();

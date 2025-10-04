@@ -126,11 +126,13 @@ class _RadioInfo extends StatelessWidget {
     var title = RadioConfigValues.title;
     const subtitle = RadioConfigValues.radioStreamingSubtitle;
     var isPlaying = false;
+    var audioQuality = AudioQuality.unknown;
 
     if (state is RadioLoaded) {
       final loadedState = state as RadioLoaded;
       title = loadedState.currentStation?.title ?? RadioConfigValues.title;
       isPlaying = loadedState.isPlaying;
+      audioQuality = loadedState.audioQuality;
     }
 
     return Column(
@@ -147,24 +149,15 @@ class _RadioInfo extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (isPlaying)
-                _LiveIndicator()
-              else
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.outline,
-                    shape: BoxShape.circle,
-                  ),
-                ),
+              _StatusIndicator(
+                isPlaying: isPlaying,
+                audioQuality: audioQuality,
+              ),
               const SizedBox(width: 8),
               Text(
-                isPlaying ? RadioConfigValues.liveStatusText : RadioConfigValues.stoppedStatusText,
+                _getStatusText(isPlaying, audioQuality),
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: isPlaying
-                          ? Theme.of(context).colorScheme.onPrimaryContainer
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: _getStatusColor(context, isPlaying, audioQuality),
                       fontWeight: FontWeight.w600,
                     ),
               ),
@@ -195,6 +188,36 @@ class _RadioInfo extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _getStatusText(bool isPlaying, AudioQuality audioQuality) {
+    if (!isPlaying) {
+      return RadioConfigValues.stoppedStatusText;
+    }
+    
+    switch (audioQuality) {
+      case AudioQuality.live:
+        return RadioConfigValues.liveStatusText;
+      case AudioQuality.offAir:
+        return RadioConfigValues.offAirStatusText;
+      case AudioQuality.unknown:
+        return RadioConfigValues.liveStatusText; // Default to live when unknown
+    }
+  }
+
+  Color _getStatusColor(BuildContext context, bool isPlaying, AudioQuality audioQuality) {
+    if (!isPlaying) {
+      return Theme.of(context).colorScheme.onSurfaceVariant;
+    }
+    
+    switch (audioQuality) {
+      case AudioQuality.live:
+        return Theme.of(context).colorScheme.onPrimaryContainer;
+      case AudioQuality.offAir:
+        return Colors.orange; // Orange for off-air
+      case AudioQuality.unknown:
+        return Theme.of(context).colorScheme.onPrimaryContainer;
+    }
   }
 }
 
@@ -501,5 +524,59 @@ class _LiveIndicatorState extends State<_LiveIndicator>
         );
       },
     );
+  }
+}
+
+class _StatusIndicator extends StatelessWidget {
+  const _StatusIndicator({
+    required this.isPlaying,
+    required this.audioQuality,
+  });
+
+  final bool isPlaying;
+  final AudioQuality audioQuality;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isPlaying) {
+      return Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.outline,
+          shape: BoxShape.circle,
+        ),
+      );
+    }
+
+    switch (audioQuality) {
+      case AudioQuality.live:
+        return _LiveIndicator();
+      case AudioQuality.offAir:
+        return Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: Colors.orange,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.orange.withValues(alpha: 0.3),
+                blurRadius: 4,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+        );
+      case AudioQuality.unknown:
+        return Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.outline,
+            shape: BoxShape.circle,
+          ),
+        );
+    }
   }
 }

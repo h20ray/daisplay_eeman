@@ -1,5 +1,6 @@
 import 'package:quran_app/modules/radio_by_tujuhcahaya/domain/entities/radio_station.dart';
 import 'package:quran_app/modules/radio_by_tujuhcahaya/domain/repositories/radio_repository.dart';
+import 'package:quran_app/modules/radio_by_tujuhcahaya/presentation/blocs/state/radio_state.dart';
 
 class RadioUseCase {
   const RadioUseCase(this._repository);
@@ -15,7 +16,11 @@ class RadioUseCase {
   Stream<RadioStation> get currentStationStream =>
       _repository.currentStationStream;
   Stream<double> get volumeStream => _repository.volumeStream;
+  Stream<AudioQuality> get audioQualityStream => _repository.audioQualityStream;
+  Stream<double> get audioLevelStream => _repository.audioLevelStream;
   RadioStation? get currentStation => _repository.currentStation;
   bool get isPlaying => _repository.isPlaying;
   double get volume => _repository.volume;
+  AudioQuality get audioQuality => _repository.audioQuality;
+  double get audioLevel => _repository.audioLevel;
 }

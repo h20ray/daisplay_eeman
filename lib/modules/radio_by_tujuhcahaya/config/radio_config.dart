@@ -33,7 +33,17 @@ class RadioConfigValues {
   static const String radioStreamingSubtitle = 'Radio Streaming';
   static const String liveStatusText = 'LIVE';
   static const String stoppedStatusText = 'STOPPED';
+  static const String offAirStatusText = 'OFF-AIR';
   static const String volumeLabelText = 'Volume';
+
+  // Audio Detection Configuration
+  static const double liveContentThreshold = -30; // dB threshold for actual live content (not noise)
+  static const double noiseThreshold = -50; // dB threshold below which is considered noise/silence
+  static const int audioAnalysisInterval = 3000; // milliseconds between analysis
+  static const int offAirDetectionDuration = 10000; // milliseconds of noise before marking off-air
+  
+  // Auto-Resume Configuration
+  static const bool autoResumeOnAppStart = true; // Whether to automatically resume radio when app starts
 }
 
 // Radio Configuration Entity
@@ -51,7 +61,13 @@ class RadioConfig {
     required this.radioStreamingSubtitle,
     required this.liveStatusText,
     required this.stoppedStatusText,
+    required this.offAirStatusText,
     required this.volumeLabelText,
+    required this.liveContentThreshold,
+    required this.noiseThreshold,
+    required this.audioAnalysisInterval,
+    required this.offAirDetectionDuration,
+    required this.autoResumeOnAppStart,
   });
 
   final String streamingUrl;
@@ -66,7 +82,13 @@ class RadioConfig {
   final String radioStreamingSubtitle;
   final String liveStatusText;
   final String stoppedStatusText;
+  final String offAirStatusText;
   final String volumeLabelText;
+  final double liveContentThreshold;
+  final double noiseThreshold;
+  final int audioAnalysisInterval;
+  final int offAirDetectionDuration;
+  final bool autoResumeOnAppStart;
 
   static const RadioConfig defaultConfig = RadioConfig(
     streamingUrl: RadioConfigValues.streamingUrl,
@@ -81,7 +103,13 @@ class RadioConfig {
     radioStreamingSubtitle: RadioConfigValues.radioStreamingSubtitle,
     liveStatusText: RadioConfigValues.liveStatusText,
     stoppedStatusText: RadioConfigValues.stoppedStatusText,
+    offAirStatusText: RadioConfigValues.offAirStatusText,
     volumeLabelText: RadioConfigValues.volumeLabelText,
+    liveContentThreshold: RadioConfigValues.liveContentThreshold,
+    noiseThreshold: RadioConfigValues.noiseThreshold,
+    audioAnalysisInterval: RadioConfigValues.audioAnalysisInterval,
+    offAirDetectionDuration: RadioConfigValues.offAirDetectionDuration,
+    autoResumeOnAppStart: RadioConfigValues.autoResumeOnAppStart,
   );
 
   RadioConfig copyWith({
@@ -97,7 +125,13 @@ class RadioConfig {
     String? radioStreamingSubtitle,
     String? liveStatusText,
     String? stoppedStatusText,
+    String? offAirStatusText,
     String? volumeLabelText,
+    double? liveContentThreshold,
+    double? noiseThreshold,
+    int? audioAnalysisInterval,
+    int? offAirDetectionDuration,
+    bool? autoResumeOnAppStart,
   }) {
     return RadioConfig(
       streamingUrl: streamingUrl ?? this.streamingUrl,
@@ -113,7 +147,13 @@ class RadioConfig {
       radioStreamingSubtitle: radioStreamingSubtitle ?? this.radioStreamingSubtitle,
       liveStatusText: liveStatusText ?? this.liveStatusText,
       stoppedStatusText: stoppedStatusText ?? this.stoppedStatusText,
+      offAirStatusText: offAirStatusText ?? this.offAirStatusText,
       volumeLabelText: volumeLabelText ?? this.volumeLabelText,
+      liveContentThreshold: liveContentThreshold ?? this.liveContentThreshold,
+      noiseThreshold: noiseThreshold ?? this.noiseThreshold,
+      audioAnalysisInterval: audioAnalysisInterval ?? this.audioAnalysisInterval,
+      offAirDetectionDuration: offAirDetectionDuration ?? this.offAirDetectionDuration,
+      autoResumeOnAppStart: autoResumeOnAppStart ?? this.autoResumeOnAppStart,
     );
   }
 }
@@ -206,6 +246,31 @@ class RadioConfigService {
 
   void updateVolumeLabelText(String text) {
     _currentConfig = _currentConfig.copyWith(volumeLabelText: text);
+    _saveConfig();
+  }
+
+  void updateOffAirStatusText(String text) {
+    _currentConfig = _currentConfig.copyWith(offAirStatusText: text);
+    _saveConfig();
+  }
+
+  void updateLiveContentThreshold(double threshold) {
+    _currentConfig = _currentConfig.copyWith(liveContentThreshold: threshold);
+    _saveConfig();
+  }
+
+  void updateNoiseThreshold(double threshold) {
+    _currentConfig = _currentConfig.copyWith(noiseThreshold: threshold);
+    _saveConfig();
+  }
+
+  void updateAudioAnalysisInterval(int interval) {
+    _currentConfig = _currentConfig.copyWith(audioAnalysisInterval: interval);
+    _saveConfig();
+  }
+
+  void updateOffAirDetectionDuration(int duration) {
+    _currentConfig = _currentConfig.copyWith(offAirDetectionDuration: duration);
     _saveConfig();
   }
 }
