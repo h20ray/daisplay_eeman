@@ -29,7 +29,7 @@ class RadioRepositoryImpl implements RadioRepository {
 
   RadioStation? _currentStation;
   bool _isPlaying = false;
-  double _volume = 50;
+  double _volume = 0; // Will be updated with system volume
   Timer? _debounceTimer;
   bool _isProcessingPlaybackState = false;
   StreamSubscription<int>? _volumeSubscription;
@@ -140,12 +140,15 @@ class RadioRepositoryImpl implements RadioRepository {
   }
 
   void _initializeVolume() {
-    // Get current system volume
+    // Get current system volume immediately
     VolumeRegulator.getVolume().then((value) {
       _volume = value.toDouble();
       if (!_volumeController.isClosed) {
         _volumeController.add(_volume);
       }
+    }).catchError((error) {
+      // If getting system volume fails, don't set any fallback
+      // The volume will remain 0 until system volume is available
     });
 
     // Listen to system volume changes
@@ -210,7 +213,7 @@ class RadioRepositoryImpl implements RadioRepository {
           'imagePath': _currentStation!.imagePath,
         });
         await _secureStorage.write(
-            key: 'radio_current_station', value: stationJson);
+            key: 'radio_current_station', value: stationJson,);
       } else {
         // Clear state if not playing
         await _clearRadioState();

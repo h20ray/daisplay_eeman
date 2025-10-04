@@ -150,7 +150,14 @@ class RadioCubit extends Cubit<RadioState> {
       _isActionInProgress = true;
       await _radioUseCase.stopRadio();
       if (isClosed) return;
-      emit(const RadioInitial());
+      // Emit RadioLoaded with isPlaying: false to preserve volume information
+      emit(
+        RadioLoaded(
+          currentStation: null,
+          isPlaying: false,
+          volume: _radioUseCase.volume,
+        ),
+      );
     } catch (e) {
       if (isClosed) return;
       emit(RadioError(e.toString()));
@@ -184,23 +191,20 @@ class RadioCubit extends Cubit<RadioState> {
   }
 
   void _checkInitialState() {
-    // Check if radio is already playing when cubit is initialized
-    if (_radioUseCase.isPlaying) {
-      // Radio is playing, emit RadioLoaded state immediately
-      final currentStation = _radioUseCase.currentStation;
-      if (currentStation != null) {
+    // Wait for volume to be initialized before emitting initial state
+    _radioUseCase.volumeStream.take(1).listen((volume) {
+      if (!isClosed) {
+        // Emit with the actual system volume (even if it's 0)
+        final currentStation = _radioUseCase.currentStation;
         emit(
           RadioLoaded(
             currentStation: currentStation,
-            isPlaying: true,
-            volume: _radioUseCase.volume,
+            isPlaying: _radioUseCase.isPlaying,
+            volume: volume,
           ),
         );
-      } else {
-        // Radio is playing but no station info - handle this case
-        _handlePlayingStateWithoutLoadedState();
       }
-    }
+    });
   }
 
   void _handlePlayingStateWithoutLoadedState() {

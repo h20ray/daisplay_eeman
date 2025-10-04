@@ -9,7 +9,7 @@ class RadioConfigValues {
   static const String title = 'RADIO DAKWAH ISLAM 107.9 FM';
 
   // Radio name - This can be used for display purposes
-  static const String name = 'RADIO DAKWAH ISLAM 107.9 FM';
+  static const String name = 'RADIO DAKWAH ISLAM';
 
   // Status text when radio is playing
   static const String nowPlayingStatus = 'Anda Sedang mendengarkan';
@@ -21,13 +21,19 @@ class RadioConfigValues {
   static const String imagePath = 'assets/icons/ic_radio_logo.png';
 
   // Static notification title to display in system notification
-  static const String notificationTitle = 'RADIO DAKWAH ISLAM 107.9 FM';
+  static const String notificationTitle = 'RADIO DAKWAH ISLAM - 107.9 FM';
 
   // Static notification subtitle/status to display in system notification
   static const String notificationSubtitle = 'Anda Sedang mendengarkan';
 
   // Whether to show stream metadata (artist/title) in system notification
   static const bool showMetadataInNotification = false;
+
+  // UI Text Constants
+  static const String radioStreamingSubtitle = 'Radio Streaming';
+  static const String liveStatusText = 'LIVE';
+  static const String stoppedStatusText = 'STOPPED';
+  static const String volumeLabelText = 'Volume';
 }
 
 // Radio Configuration Entity
@@ -42,6 +48,10 @@ class RadioConfig {
     required this.notificationTitle,
     required this.notificationSubtitle,
     required this.showMetadataInNotification,
+    required this.radioStreamingSubtitle,
+    required this.liveStatusText,
+    required this.stoppedStatusText,
+    required this.volumeLabelText,
   });
 
   final String streamingUrl;
@@ -53,6 +63,10 @@ class RadioConfig {
   final String notificationTitle;
   final String notificationSubtitle;
   final bool showMetadataInNotification;
+  final String radioStreamingSubtitle;
+  final String liveStatusText;
+  final String stoppedStatusText;
+  final String volumeLabelText;
 
   static const RadioConfig defaultConfig = RadioConfig(
     streamingUrl: RadioConfigValues.streamingUrl,
@@ -64,6 +78,10 @@ class RadioConfig {
     notificationTitle: RadioConfigValues.notificationTitle,
     notificationSubtitle: RadioConfigValues.notificationSubtitle,
     showMetadataInNotification: RadioConfigValues.showMetadataInNotification,
+    radioStreamingSubtitle: RadioConfigValues.radioStreamingSubtitle,
+    liveStatusText: RadioConfigValues.liveStatusText,
+    stoppedStatusText: RadioConfigValues.stoppedStatusText,
+    volumeLabelText: RadioConfigValues.volumeLabelText,
   );
 
   RadioConfig copyWith({
@@ -76,6 +94,10 @@ class RadioConfig {
     String? notificationTitle,
     String? notificationSubtitle,
     bool? showMetadataInNotification,
+    String? radioStreamingSubtitle,
+    String? liveStatusText,
+    String? stoppedStatusText,
+    String? volumeLabelText,
   }) {
     return RadioConfig(
       streamingUrl: streamingUrl ?? this.streamingUrl,
@@ -88,6 +110,10 @@ class RadioConfig {
       notificationSubtitle: notificationSubtitle ?? this.notificationSubtitle,
       showMetadataInNotification:
           showMetadataInNotification ?? this.showMetadataInNotification,
+      radioStreamingSubtitle: radioStreamingSubtitle ?? this.radioStreamingSubtitle,
+      liveStatusText: liveStatusText ?? this.liveStatusText,
+      stoppedStatusText: stoppedStatusText ?? this.stoppedStatusText,
+      volumeLabelText: volumeLabelText ?? this.volumeLabelText,
     );
   }
 }
@@ -162,6 +188,26 @@ class RadioConfigService {
     _currentConfig = _currentConfig.copyWith(showMetadataInNotification: show);
     _saveConfig();
   }
+
+  void updateRadioStreamingSubtitle(String subtitle) {
+    _currentConfig = _currentConfig.copyWith(radioStreamingSubtitle: subtitle);
+    _saveConfig();
+  }
+
+  void updateLiveStatusText(String text) {
+    _currentConfig = _currentConfig.copyWith(liveStatusText: text);
+    _saveConfig();
+  }
+
+  void updateStoppedStatusText(String text) {
+    _currentConfig = _currentConfig.copyWith(stoppedStatusText: text);
+    _saveConfig();
+  }
+
+  void updateVolumeLabelText(String text) {
+    _currentConfig = _currentConfig.copyWith(volumeLabelText: text);
+    _saveConfig();
+  }
 }
 
 // Instructions:
@@ -172,4 +218,5 @@ class RadioConfigService {
 // 5. Update 'imagePath' to point to your radio logo
 // 6. Update 'notificationTitle' and 'notificationSubtitle' for notification text
 // 7. Toggle 'showMetadataInNotification' to control metadata in notification
-// 8. Save the file and restart the app
+// 8. Customize UI text: 'radioStreamingSubtitle', 'liveStatusText', 'stoppedStatusText', 'volumeLabelText'
+// 9. Save the file and restart the app

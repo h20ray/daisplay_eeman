@@ -124,7 +124,7 @@ class _RadioInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var title = RadioConfigValues.title;
-    const subtitle = 'Radio Streaming';
+    const subtitle = RadioConfigValues.radioStreamingSubtitle;
     var isPlaying = false;
 
     if (state is RadioLoaded) {
@@ -147,19 +147,20 @@ class _RadioInfo extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: isPlaying
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.outline,
-                  shape: BoxShape.circle,
+              if (isPlaying)
+                _LiveIndicator()
+              else
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.outline,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ),
               const SizedBox(width: 8),
               Text(
-                isPlaying ? 'LIVE' : 'STOPPED',
+                isPlaying ? RadioConfigValues.liveStatusText : RadioConfigValues.stoppedStatusText,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: isPlaying
                           ? Theme.of(context).colorScheme.onPrimaryContainer
@@ -202,9 +203,19 @@ class _VolumeControl extends StatelessWidget {
 
   final RadioState state;
 
+  void _increaseVolume(BuildContext context, double currentVolume) {
+    final newVolume = (currentVolume + 5).clamp(0, 100).toDouble();
+    context.read<RadioCubit>().setVolume(newVolume);
+  }
+
+  void _decreaseVolume(BuildContext context, double currentVolume) {
+    final newVolume = (currentVolume - 5).clamp(0, 100).toDouble();
+    context.read<RadioCubit>().setVolume(newVolume);
+  }
+
   @override
   Widget build(BuildContext context) {
-    double volume = 50;
+    double volume = 0; // Default to 0, will be updated from state
     if (state is RadioLoaded) {
       volume = (state as RadioLoaded).volume;
     }
@@ -214,20 +225,42 @@ class _VolumeControl extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(
-              Icons.volume_down_rounded,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            // Volume Down Button
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _decreaseVolume(context, volume),
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.volume_down_rounded,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             ),
             Text(
-              'Volume',
+              RadioConfigValues.volumeLabelText,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
                   ),
             ),
-            Icon(
-              Icons.volume_up_rounded,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            // Volume Up Button
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _increaseVolume(context, volume),
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.volume_up_rounded,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -387,6 +420,86 @@ class _ControlButton extends StatelessWidget {
                 ),
         ),
       ),
+    );
+  }
+}
+
+class _LiveIndicator extends StatefulWidget {
+  @override
+  _LiveIndicatorState createState() => _LiveIndicatorState();
+}
+
+class _LiveIndicatorState extends State<_LiveIndicator>
+    with TickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Create animation controller with 1.5 second duration
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    // Create scale animation (breathing effect)
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.2,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ),);
+
+    // Create opacity animation (blinking effect)
+    _opacityAnimation = Tween<double>(
+      begin: 0.6,
+      end: 1,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ),);
+
+    // Start the animation and repeat it
+    _animationController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Opacity(
+            opacity: _opacityAnimation.value,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.red.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
