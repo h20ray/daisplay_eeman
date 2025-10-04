@@ -17,12 +17,32 @@ class RadioCubit extends Cubit<RadioState> {
   StreamSubscription<double>? _volumeSubscription;
   StreamSubscription<bool>? _justAudioPlayingSubscription;
 
+  // State management to prevent rapid toggling
+  bool _isActionInProgress = false;
+  DateTime? _lastStateChange;
+
   void _initialize() {
+    // Check initial state when cubit is created
+    _checkInitialState();
+
     _isPlayingSubscription = _radioUseCase.isPlayingStream.listen(
       (isPlaying) {
         if (isClosed) return;
+
+        // Prevent rapid state changes
+        final now = DateTime.now();
+        if (_lastStateChange != null &&
+            now.difference(_lastStateChange!).inMilliseconds < 500) {
+          return;
+        }
+        _lastStateChange = now;
+
         if (state is RadioLoaded) {
           emit((state as RadioLoaded).copyWith(isPlaying: isPlaying));
+        } else if (isPlaying) {
+          // If we receive isPlaying=true but state is not RadioLoaded,
+          // we need to get the current station and emit RadioLoaded
+          _handlePlayingStateWithoutLoadedState();
         }
       },
       onError: (Object error) {
@@ -84,45 +104,58 @@ class RadioCubit extends Cubit<RadioState> {
   }
 
   Future<void> playRadio(RadioStation station) async {
+    if (_isActionInProgress) {
+      return;
+    }
+
     try {
       if (isClosed) return;
+      _isActionInProgress = true;
       emit(const RadioLoading());
       await _radioUseCase.playRadio(station);
       if (isClosed) return;
-      emit(
-        RadioLoaded(
-          currentStation: station,
-          isPlaying: true,
-          volume: _radioUseCase.volume,
-        ),
-      );
+      // Don't emit state here - let the playback state stream handle it
+      // This prevents race conditions between manual state and stream state
     } catch (e) {
       if (isClosed) return;
       emit(RadioError(e.toString()));
+    } finally {
+      _isActionInProgress = false;
     }
   }
 
   Future<void> pauseRadio() async {
+    if (_isActionInProgress) return;
+
     try {
+      if (isClosed) return;
+      _isActionInProgress = true;
       await _radioUseCase.pauseRadio();
       if (isClosed) return;
-      if (state is RadioLoaded) {
-        emit((state as RadioLoaded).copyWith(isPlaying: false));
-      }
+      // Don't emit state here - let the playback state stream handle it
+      // This prevents race conditions between manual state and stream state
     } catch (e) {
       if (isClosed) return;
       emit(RadioError('Failed to pause radio: $e'));
+    } finally {
+      _isActionInProgress = false;
     }
   }
 
   Future<void> stopRadio() async {
+    if (_isActionInProgress) return;
+
     try {
+      if (isClosed) return;
+      _isActionInProgress = true;
       await _radioUseCase.stopRadio();
       if (isClosed) return;
       emit(const RadioInitial());
     } catch (e) {
       if (isClosed) return;
       emit(RadioError(e.toString()));
+    } finally {
+      _isActionInProgress = false;
     }
   }
 
@@ -148,6 +181,41 @@ class RadioCubit extends Cubit<RadioState> {
         }
       }
     }
+  }
+
+  void _checkInitialState() {
+    // Check if radio is already playing when cubit is initialized
+    if (_radioUseCase.isPlaying) {
+      // Radio is playing, emit RadioLoaded state immediately
+      final currentStation = _radioUseCase.currentStation;
+      if (currentStation != null) {
+        emit(
+          RadioLoaded(
+            currentStation: currentStation,
+            isPlaying: true,
+            volume: _radioUseCase.volume,
+          ),
+        );
+      } else {
+        // Radio is playing but no station info - handle this case
+        _handlePlayingStateWithoutLoadedState();
+      }
+    }
+  }
+
+  void _handlePlayingStateWithoutLoadedState() {
+    // Get the current station from the repository and emit RadioLoaded
+    _radioUseCase.currentStationStream.take(1).listen((station) {
+      if (!isClosed) {
+        emit(
+          RadioLoaded(
+            currentStation: station,
+            isPlaying: true,
+            volume: _radioUseCase.volume,
+          ),
+        );
+      }
+    });
   }
 
   @override

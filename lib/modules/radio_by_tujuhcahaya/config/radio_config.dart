@@ -3,8 +3,7 @@
 
 class RadioConfigValues {
   // Radio streaming URL - Replace with your actual radio stream URL
-  static const String streamingUrl =
-      'https://stream.tujuhcahaya.com/listen/tujuhcahaya_radio/radio.mp3';
+  static const String streamingUrl = 'https://i.klikhost.com/8260/;radio.mp3';
 
   // Radio title - This appears in the floating toolbar
   static const String title = 'RADIO DAKWAH ISLAM 107.9 FM';

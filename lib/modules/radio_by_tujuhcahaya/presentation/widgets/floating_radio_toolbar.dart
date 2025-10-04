@@ -21,6 +21,8 @@ class FloatingRadioToolbar extends StatefulWidget {
 class _FloatingRadioToolbarState extends State<FloatingRadioToolbar> {
   late final GlobalAudioManager _audioManager;
   late final RadioConfigService _radioConfigService;
+  bool _isProcessingAction = false;
+  DateTime? _lastActionTime;
 
   @override
   void initState() {
@@ -218,19 +220,20 @@ class _FloatingRadioToolbarState extends State<FloatingRadioToolbar> {
     bool isPlaying,
     bool isLoading,
   ) {
+    final isDisabled = isLoading || _isProcessingAction;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
-          if (isLoading) return;
-          _handlePlayStop(context, isPlaying);
-        },
+        onTap: isDisabled ? null : () => _handlePlayStop(context, isPlaying),
         borderRadius: BorderRadius.circular(40.r),
         child: Container(
           width: 80.w,
           height: 80.w,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
+            color: isDisabled
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.6)
+                : Theme.of(context).colorScheme.primary,
             borderRadius: BorderRadius.circular(40.r),
             boxShadow: [
               BoxShadow(
@@ -243,7 +246,7 @@ class _FloatingRadioToolbarState extends State<FloatingRadioToolbar> {
               ),
             ],
           ),
-          child: isLoading
+          child: isDisabled
               ? SizedBox(
                   width: 40.sp,
                   height: 40.sp,
@@ -264,18 +267,42 @@ class _FloatingRadioToolbarState extends State<FloatingRadioToolbar> {
     );
   }
 
-  void _handlePlayStop(BuildContext context, bool isPlaying) {
-    if (isPlaying) {
-      // Stop radio and notify audio manager
-      context.read<RadioCubit>().stopRadio();
-      _audioManager.isRadioPlaying = false;
-    } else {
-      // Start default radio if not playing
-      _startDefaultRadio(context);
+  Future<void> _handlePlayStop(BuildContext context, bool isPlaying) async {
+    if (_isProcessingAction) {
+      return;
+    }
+
+    // Debounce rapid clicks (prevent multiple actions within 1000ms)
+    final now = DateTime.now();
+    if (_lastActionTime != null &&
+        now.difference(_lastActionTime!).inMilliseconds < 1000) {
+      return;
+    }
+    _lastActionTime = now;
+
+    setState(() {
+      _isProcessingAction = true;
+    });
+
+    try {
+      if (isPlaying) {
+        // Stop radio and notify audio manager
+        await context.read<RadioCubit>().stopRadio();
+        _audioManager.isRadioPlaying = false;
+      } else {
+        // Start default radio if not playing
+        await _startDefaultRadio(context);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessingAction = false;
+        });
+      }
     }
   }
 
-  void _startDefaultRadio(BuildContext context) {
+  Future<void> _startDefaultRadio(BuildContext context) async {
     final config = _radioConfigService.currentConfig;
     final defaultStation = RadioStation(
       id: 'default',
@@ -286,7 +313,7 @@ class _FloatingRadioToolbarState extends State<FloatingRadioToolbar> {
 
     // Notify audio manager that radio is starting
     _audioManager.isRadioPlaying = true;
-    context.read<RadioCubit>().playRadio(defaultStation);
+    await context.read<RadioCubit>().playRadio(defaultStation);
   }
 
   void _navigateToRadioPage(BuildContext context) {

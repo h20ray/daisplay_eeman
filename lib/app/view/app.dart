@@ -5,6 +5,7 @@ import 'package:quran_app/common/common.dart';
 import 'package:quran_app/common/global_variable.dart';
 import 'package:quran_app/common/themes/app_theme.dart';
 import 'package:quran_app/modules/prayer_time/prayer_time.dart';
+import 'package:quran_app/modules/radio_by_tujuhcahaya/presentation/blocs/cubit/radio_cubit.dart';
 import 'package:quran_app/modules/settings/domain/settings_usecase.dart';
 import 'package:quran_app/modules/settings/presentation/blocs/cubit/settings_cubit.dart';
 
@@ -43,6 +44,9 @@ class App extends StatelessWidget {
             Future.microtask(cubit.init);
             return cubit;
           },
+        ),
+        BlocProvider<RadioCubit>(
+          create: (context) => locator<RadioCubit>(),
         ),
       ],
       child: const AppView(),

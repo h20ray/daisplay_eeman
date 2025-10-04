@@ -1005,7 +1005,7 @@ packages:
     source: hosted
     version: "5.0.5"
   provider:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: provider
       sha256: "4e82183fa20e5ca25703ead7e05de9e4cceed1fbd1eadc1ac3cb6f565a09f272"
@@ -1345,6 +1345,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "15.0.2"
+  volume_regulator:
+    dependency: "direct main"
+    description:
+      name: volume_regulator
+      sha256: "8a0b16973267c2cab8519cb82b3e09da11ed6a86499a7621dd08f5d1af885bcc"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.2"
   watcher:
     dependency: transitive
     description:

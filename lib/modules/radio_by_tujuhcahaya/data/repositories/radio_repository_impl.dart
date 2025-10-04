@@ -1,13 +1,16 @@
 // ignore_for_file: omit_local_variable_types
 
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:quran_app/common/global_variable.dart';
 import 'package:quran_app/common/services/global_audio_manager.dart';
 import 'package:quran_app/modules/radio_by_tujuhcahaya/config/radio_config.dart';
 import 'package:quran_app/modules/radio_by_tujuhcahaya/domain/entities/radio_station.dart';
 import 'package:quran_app/modules/radio_by_tujuhcahaya/domain/repositories/radio_repository.dart';
 import 'package:radio_player/radio_player.dart';
+import 'package:volume_regulator/volume_regulator.dart';
 
 class RadioRepositoryImpl implements RadioRepository {
   RadioRepositoryImpl() {
@@ -16,6 +19,7 @@ class RadioRepositoryImpl implements RadioRepository {
 
   final GlobalAudioManager _audioManager = locator<GlobalAudioManager>();
   final RadioConfigService _configService = locator<RadioConfigService>();
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final StreamController<bool> _isPlayingController =
       StreamController<bool>.broadcast();
   final StreamController<RadioStation> _currentStationController =
@@ -26,11 +30,20 @@ class RadioRepositoryImpl implements RadioRepository {
   RadioStation? _currentStation;
   bool _isPlaying = false;
   double _volume = 50;
+  Timer? _debounceTimer;
+  bool _isProcessingPlaybackState = false;
+  StreamSubscription<int>? _volumeSubscription;
 
   StreamSubscription<PlaybackState>? _playbackStateSubscription;
   StreamSubscription<Metadata>? _metadataSubscription;
 
   void _initializeRadioPlayer() {
+    // Initialize system volume
+    _initializeVolume();
+
+    // Check current playback state on initialization
+    _checkCurrentPlaybackState();
+
     // Register radio stop callback so GlobalAudioManager can stop radio if needed
     _audioManager.stopRadioCallback = () async {
       try {
@@ -48,16 +61,45 @@ class RadioRepositoryImpl implements RadioRepository {
       (playbackState) {
         try {
           final playing = playbackState == PlaybackState.playing;
-          _isPlaying = playing;
-          if (!_isPlayingController.isClosed) {
-            _isPlayingController.add(playing);
+
+          // Prevent processing if already processing
+          if (_isProcessingPlaybackState) {
+            return;
           }
-          _audioManager.isRadioPlaying = playing;
+
+          // Only process if state actually changed
+          if (_isPlaying == playing) {
+            return;
+          }
+
+          _isProcessingPlaybackState = true;
+
+          // Debounce rapid state changes with longer delay
+          _debounceTimer?.cancel();
+          _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+            if (_isPlaying != playing) {
+              _isPlaying = playing;
+              if (!_isPlayingController.isClosed) {
+                _isPlayingController.add(playing);
+              }
+              _audioManager.isRadioPlaying = playing;
+
+              // Save or clear state based on playing status
+              if (playing) {
+                _saveRadioState();
+              } else {
+                _clearRadioState();
+              }
+            }
+            _isProcessingPlaybackState = false;
+          });
         } catch (e) {
+          _isProcessingPlaybackState = false;
           // Handle playback state error silently
         }
       },
       onError: (Object error) {
+        _isProcessingPlaybackState = false;
         // Handle playback state stream error
         if (!_isPlayingController.isClosed) {
           _isPlayingController.add(false);
@@ -97,6 +139,96 @@ class RadioRepositoryImpl implements RadioRepository {
     );
   }
 
+  void _initializeVolume() {
+    // Get current system volume
+    VolumeRegulator.getVolume().then((value) {
+      _volume = value.toDouble();
+      if (!_volumeController.isClosed) {
+        _volumeController.add(_volume);
+      }
+    });
+
+    // Listen to system volume changes
+    _volumeSubscription = VolumeRegulator.volumeStream.listen((value) {
+      _volume = value.toDouble();
+      if (!_volumeController.isClosed) {
+        _volumeController.add(_volume);
+      }
+    });
+  }
+
+  void _checkCurrentPlaybackState() {
+    // Restore state from persistent storage when app reopens
+    _restoreRadioState();
+  }
+
+  Future<void> _restoreRadioState() async {
+    try {
+      // Get saved radio state from secure storage
+      final savedIsPlaying = await _secureStorage.read(key: 'radio_is_playing');
+      final savedStationJson =
+          await _secureStorage.read(key: 'radio_current_station');
+
+      if (savedIsPlaying == 'true' && savedStationJson != null) {
+        // Radio was playing when app was closed, restore the state
+        final stationMap = jsonDecode(savedStationJson) as Map<String, dynamic>;
+        final restoredStation = RadioStation(
+          id: stationMap['id'] as String,
+          title: stationMap['title'] as String,
+          url: stationMap['url'] as String,
+          imagePath: stationMap['imagePath'] as String,
+        );
+
+        // Update internal state
+        _isPlaying = true;
+        _currentStation = restoredStation;
+        _audioManager.isRadioPlaying = true;
+
+        // Emit restored state
+        if (!_isPlayingController.isClosed) {
+          _isPlayingController.add(true);
+        }
+        if (!_currentStationController.isClosed) {
+          _currentStationController.add(restoredStation);
+        }
+      }
+    } catch (e) {
+      // If restoration fails, clear any corrupted data
+      await _clearRadioState();
+    }
+  }
+
+  Future<void> _saveRadioState() async {
+    try {
+      if (_isPlaying && _currentStation != null) {
+        // Save current state to persistent storage
+        await _secureStorage.write(key: 'radio_is_playing', value: 'true');
+        final stationJson = jsonEncode({
+          'id': _currentStation!.id,
+          'title': _currentStation!.title,
+          'url': _currentStation!.url,
+          'imagePath': _currentStation!.imagePath,
+        });
+        await _secureStorage.write(
+            key: 'radio_current_station', value: stationJson);
+      } else {
+        // Clear state if not playing
+        await _clearRadioState();
+      }
+    } catch (e) {
+      // Handle storage errors silently
+    }
+  }
+
+  Future<void> _clearRadioState() async {
+    try {
+      await _secureStorage.delete(key: 'radio_is_playing');
+      await _secureStorage.delete(key: 'radio_current_station');
+    } catch (e) {
+      // Handle storage errors silently
+    }
+  }
+
   @override
   Future<void> playRadio(RadioStation station) async {
     try {
@@ -121,7 +253,11 @@ class RadioRepositoryImpl implements RadioRepository {
         url: station.url,
         logoAssetPath: station.imagePath.isNotEmpty ? station.imagePath : null,
       );
+
       await RadioPlayer.play();
+
+      // Save state to persistent storage
+      await _saveRadioState();
     } catch (e) {
       // Re-throw error to be handled by caller
       rethrow;
@@ -144,6 +280,9 @@ class RadioRepositoryImpl implements RadioRepository {
       await RadioPlayer.reset();
       _currentStation = null;
       _audioManager.isRadioPlaying = false;
+
+      // Clear state from persistent storage
+      await _clearRadioState();
     } catch (e) {
       // Re-throw error to be handled by caller
       rethrow;
@@ -152,11 +291,21 @@ class RadioRepositoryImpl implements RadioRepository {
 
   @override
   Future<void> setVolume(double volume) async {
-    _volume = volume;
-    if (!_volumeController.isClosed) {
-      _volumeController.add(volume);
+    try {
+      // Set system volume using volume_regulator
+      await VolumeRegulator.setVolume(volume.toInt());
+      _volume = volume;
+      if (!_volumeController.isClosed) {
+        _volumeController.add(volume);
+      }
+    } catch (e) {
+      // If setting system volume fails, still update local state for UI consistency
+      _volume = volume;
+      if (!_volumeController.isClosed) {
+        _volumeController.add(volume);
+      }
+      rethrow;
     }
-    // radio_player API controls system volume via a separate plugin; keep value for UI only.
   }
 
   @override
@@ -180,8 +329,10 @@ class RadioRepositoryImpl implements RadioRepository {
 
   void dispose() {
     _audioManager.unregisterStopRadioCallback();
+    _debounceTimer?.cancel();
     _playbackStateSubscription?.cancel();
     _metadataSubscription?.cancel();
+    _volumeSubscription?.cancel();
     _isPlayingController.close();
     _currentStationController.close();
     _volumeController.close();

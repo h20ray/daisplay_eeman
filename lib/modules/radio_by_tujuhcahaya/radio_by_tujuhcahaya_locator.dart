@@ -10,6 +10,6 @@ void setupRadioByTujuhCahayaLocator() {
     ..registerLazySingleton<RadioRepository>(RadioRepositoryImpl.new)
     // * UseCase
     ..registerFactory(() => RadioUseCase(locator<RadioRepository>()))
-    // * Cubit - Use factory instead of lazy singleton to ensure proper disposal
-    ..registerFactory(() => RadioCubit(locator<RadioUseCase>()));
+    // * Cubit - Use lazy singleton to ensure single instance across the app
+    ..registerLazySingleton(() => RadioCubit(locator<RadioUseCase>()));
 }
